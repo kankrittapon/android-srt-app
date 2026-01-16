@@ -86,7 +86,21 @@ class MainActivity : AppCompatActivity() {
                 
                 // Also start local preview
                 if (::srtStreamer.isInitialized) {
-                    srtStreamer.startStream(ip)
+                    val fullUrl = if (!srtUrl.isNullOrEmpty() && srtUrl.contains(ip)) {
+                        // Use the full URL from config, ensuring streamid has publish: prefix for Mediamtx
+                        var url = srtUrl
+                        if (url.contains("streamid=") && !url.contains("streamid=publish:")) {
+                            url = url.replace("streamid=", "streamid=publish:")
+                        }
+                        if (!url.contains("latency=")) {
+                            url += "&latency=2000"
+                        }
+                        url
+                    } else {
+                        // Manual IP or fallback
+                        "srt://$ip:8885?latency=2000"
+                    }
+                    srtStreamer.startStream(fullUrl)
                 }
                 
                 btnStart.isEnabled = false

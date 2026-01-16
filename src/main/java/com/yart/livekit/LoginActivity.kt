@@ -17,6 +17,7 @@ import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
@@ -85,16 +86,45 @@ class LoginActivity : AppCompatActivity() {
                 put("macAddress", macAddress)
             }
 
-            val requestBody = RequestBody.create(
-                "application/json; charset=utf-8".toMediaTypeOrNull(),
-                json.toString()
-            )
+            val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
 
             val request = Request.Builder()
                 .url("$apiBaseUrl/device/register")
                 .post(requestBody)
                 .build()
 
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    runOnUiThread {
+                        tvStatus.text = "Connection Error: ${e.message}"
+                        tvStatus.setTextColor(ContextCompat.getColor(this@LoginActivity, android.R.color.holo_red_light))
+                        btnLogin.isEnabled = true
+                    }
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseBody = response.body?.string()
+                    runOnUiThread {
+                        if (response.isSuccessful) {
+                            try {
+                                // Save BoatID and other info if needed
+                                val prefs = getSharedPreferences("SRTStreamer", Context.MODE_PRIVATE)
+                                prefs.edit().putString("BOAT_ID", boatId).apply()
+
+                                if (responseBody != null) {
+                                    val jsonResponse = JSONObject(responseBody)
+                                    // Parse additional config from response if any
+                                    val editor = prefs.edit()
+                                    if (jsonResponse.has("roomName")) {
+                                         editor.putString("ROOM_ID", jsonResponse.getString("roomName"))
+                                    }
+                                    if (jsonResponse.has("srtUrl") && !jsonResponse.isNull("srtUrl")) {
+                                        editor.putString("SRT_URL", jsonResponse.getString("srtUrl"))
+                                    }
+                                    if (jsonResponse.has("ingressId") && !jsonResponse.isNull("ingressId")) {
+                                        editor.putString("INGRESS_ID", jsonResponse.getString("ingressId"))
+                                    }
+                                    editor.apply()
                                 }
 
                                 tvStatus.text = "Connected! Starting..."

@@ -20,6 +20,7 @@ class StreamingService : Service() {
         const val ACTION_STOP = "STOP_STREAMING"
         const val EXTRA_SERVER_IP = "SERVER_IP"
         const val EXTRA_BOAT_ID = "BOAT_ID"
+        const val EXTRA_SRT_URL = "SRT_URL"
     }
 
     override fun onCreate() {
@@ -51,8 +52,12 @@ class StreamingService : Service() {
 
     private fun startForegroundService(serverIp: String, boatId: String) {
         val notification = createNotification(boatId, "Streaming to $serverIp")
-        startForeground(NOTIFICATION_ID, notification)
-        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
         // Initialize and start streaming
         // Note: This is a simplified version. In production, you'd need to handle
         // camera/audio initialization properly in a service context

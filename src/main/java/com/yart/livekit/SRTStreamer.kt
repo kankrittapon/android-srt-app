@@ -15,18 +15,15 @@ class SRTStreamer(private val context: Context, private val openGlView: OpenGlVi
         genericCamera2 = GenericCamera2(openGlView, this)
     }
 
-    fun startStream(serverIp: String) {
+    fun startStream(url: String) {
         if (genericCamera2?.isStreaming == false) {
             // Prepare Video (1280x720, 30fps, 2Mbps)
             // prepareVideo(width, height, fps, bitrate, iFrameInterval, rotation, avcProfile, avcProfileLevel)
             if (genericCamera2?.prepareAudio() == true && 
                 genericCamera2?.prepareVideo(1280, 720, 30, 2000 * 1024, 2, 0) == true) { // 2Mbps
                 
-                // Start SRT Stream
-                // URL Format: srt://ip:port?latency=2000
-                // We add latency=2000 (2s) to match the server's buffer for stability
-                val srtUrl = "srt://$serverIp:8885?latency=2000"
-                genericCamera2?.startStream(srtUrl)
+                // Start SRT Stream using the provided URL
+                genericCamera2?.startStream(url)
             } else {
                 // Handle configuration error
             }
